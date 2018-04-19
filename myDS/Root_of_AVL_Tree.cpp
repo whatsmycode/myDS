@@ -11,23 +11,61 @@ For each test case, print the root of the resulting AVL tree in one line.
 
 using std::cin;
 using std::cout;
+using std::endl;
 
 typedef int ElementType;
 typedef struct AVLNode* AVLTree;
 struct AVLNode
 {
 	ElementType val;
-	int depth = 0;
+	int height = 0;
 	AVLTree left;
 	AVLTree right;
 };
-void leftRotate(AVLTree AVLT)
+int Height(AVLTree AVLT)
 {
-
+	if (AVLT == NULL)
+		return -1;
+	else if (AVLT->left == NULL && AVLT->right == NULL)
+		return 0;
+	else if (AVLT->left != NULL && AVLT->right == NULL)
+		return AVLT->left->height + 1;
+	else if (AVLT->left == NULL && AVLT->right != NULL)
+		return AVLT->right->height + 1;
+	else
+		return (AVLT->left->height > AVLT->right->height ? AVLT->left->height : AVLT->right->height) + 1;
 }
-void rightRotate(AVLTree AVLT)
+AVLTree clockwiseRotate(AVLTree AVLT)
 {
+	AVLTree tmp = AVLT;
+	AVLT = tmp->left;
+	tmp->left = AVLT->right;
+	AVLT->right = tmp;
 
+	tmp->height = Height(tmp->left) > Height(tmp->right) ? Height(tmp->left) : Height(tmp->right) + 1;
+	AVLT->height = Height(AVLT->left) > Height(AVLT->right) ? Height(AVLT->left) : Height(AVLT->right) + 1;
+	return AVLT;
+}
+AVLTree anticlockwiseRotate(AVLTree AVLT)
+{
+	AVLTree tmp = AVLT;
+	AVLT = tmp->right;
+	tmp->right = AVLT->left;
+	AVLT->left = tmp;
+
+	tmp->height = Height(tmp->left) > Height(tmp->right) ? Height(tmp->left) : Height(tmp->right) + 1;
+	AVLT->height = Height(AVLT->left) > Height(AVLT->right) ? Height(AVLT->left) : Height(AVLT->right) + 1;
+	return AVLT;
+}
+AVLTree doubleRotateClockwise(AVLTree AVLT)
+{
+	AVLT->left = anticlockwiseRotate(AVLT->left);
+	return clockwiseRotate(AVLT);
+}
+AVLTree doubleRotateAntiClockwise(AVLTree AVLT)
+{
+	AVLT->right = clockwiseRotate(AVLT->right);
+	return anticlockwiseRotate(AVLT);
 }
 AVLTree BalanceInsert(AVLTree AVLT, ElementType X)
 {
@@ -35,7 +73,7 @@ AVLTree BalanceInsert(AVLTree AVLT, ElementType X)
 	{
 		AVLT = (AVLTree)malloc(sizeof(struct AVLNode));
 		AVLT->left = AVLT->right = NULL;
-		AVLT->depth = 0;
+		AVLT->height = 0;
 		AVLT->val = X;
 	}
 	else
@@ -44,24 +82,27 @@ AVLTree BalanceInsert(AVLTree AVLT, ElementType X)
 		if (X < AVLT->val)
 		{
 			AVLT->left = BalanceInsert(AVLT->left, X);
-			AVLT->depth++;
+			if (Height(AVLT->left) - Height(AVLT->right) == 2)
+			{
+				if (X < AVLT->left->val)
+					AVLT = clockwiseRotate(AVLT);
+				else
+					AVLT = doubleRotateClockwise(AVLT);
+			}
 		}
 		else if (X > AVLT->val)
 		{
 			AVLT->right = BalanceInsert(AVLT->right, X);
-			AVLT->depth--;
-		}
-		
-		//check all depth, if any node has a depth of 2 or -2, Rotate.
-		if (AVLT->depth == 2)
-		{
-			cout << "depth is 2\n";
-		}
-		else if (AVLT->depth == -2)
-		{
-			cout << "depth is -2\n";
-		}
+			if (Height(AVLT->right) - Height(AVLT->left) == 2)
+			{
+				if (X > AVLT->right->val)
+					AVLT = anticlockwiseRotate(AVLT);
+				else
+					AVLT = doubleRotateAntiClockwise(AVLT);
+			}
+		}	
 	}
+	AVLT->height = Height(AVLT);
 	return AVLT;
 }
 int main()
